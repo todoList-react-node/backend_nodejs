@@ -1,6 +1,6 @@
 # Ignore package.json và package-lock.json
 package.json
-package-lock.json
+node_modules/
 
 # Created by https://www.toptal.com/developers/gitignore/api/node
 # Edit at https://www.toptal.com/developers/gitignore?templates=node
