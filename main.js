@@ -5,7 +5,8 @@ const morgan = require("morgan");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const dotEnv = require("dotenv");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const todoRoutes = require("./routes/todoRouter.js");
+
 dotEnv.config();
 //connect database mongodb
 mongoose
@@ -16,8 +17,12 @@ app.use(bodyParser.json());
 app.use(morgan("common"));
 app.use(cors());
 
-const port = process.env.PORT || 3000;
+// routes
+app.use("/todo", todoRoutes);
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+const port = process.env.PORT || 8080;
+const hostname = "127.0.0.1";
+
+app.listen(port, hostname, () => {
+  console.log(`Server running at http://${hostname}:${port}/`);
 });
