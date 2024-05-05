@@ -11,7 +11,10 @@ dotEnv.config();
 //connect database mongodb
 mongoose
   .connect(process.env.MONGODB_URL)
-  .then(() => console.log("MongoDB Connected!"));
+  .then(() => console.log("MongoDB Connected!"))
+  .catch((err) => {
+    console.log(err);
+  });
 
 app.use(bodyParser.json());
 app.use(morgan("common"));

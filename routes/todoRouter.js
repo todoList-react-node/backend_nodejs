@@ -22,8 +22,26 @@ router.post("/addnew", async function (req, res) {
   }
 });
 
-router.put("/complete", (rq, res) => {
-  res.send("updtae successful");
+router.patch("/complete/:id", async (rq, res) => {
+  try {
+    const { id } = rq.params;
+    const allTodo = await todoList.findOneAndUpdate({ _id: id }, rq.body, {
+      new: true,
+    });
+    res.status(201).json(allTodo);
+  } catch (error) {
+    res.status(500).json(error);
+  }
+});
+
+router.delete("/delete/:id", async (rq, res) => {
+  try {
+    const { id } = rq.params;
+    const deleteTodo = await todoList.deleteOne({ _id: id });
+    res.send(deleteTodo);
+  } catch (error) {
+    res.status(500).json(error);
+  }
 });
 
 module.exports = router;
