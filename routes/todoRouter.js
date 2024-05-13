@@ -1,20 +1,27 @@
 const express = require("express");
 const router = express.Router();
 const { todoList } = require("../models/model.js");
+const validateToken = require("../middleware/validateTokenHandle.js");
 
-// Home page route.
-router.get("/getall", async function (req, res) {
+// Áp dụng middleware cho toàn endpont phía dưới
+router.use(validateToken);
+
+// Lấy tất cả các todolist của user thông qua user id
+router.get("/getall/:id", async function (req, res) {
   try {
-    const allTodo = await todoList.find();
+    const idUser = req.params.id;
+    const allTodo = await todoList.find({ user: idUser });
     res.status(200).json(allTodo);
   } catch (error) {
     res.status(500).json(error);
   }
 });
 
+// thêm mới todolist
 router.post("/addnew", async function (req, res) {
   try {
-    const newTodo = new todoList(req.body);
+    // Tronng request gửi từ client cần 3 field user, name, isComplete
+    const newTodo = new todoByUser(req.body);
     const saveTodo = await newTodo.save();
     res.status(200).json(saveTodo);
   } catch (error) {
@@ -22,7 +29,8 @@ router.post("/addnew", async function (req, res) {
   }
 });
 
-router.patch("/complete/:id", async (rq, res) => {
+// Cập nhật lại todo đó bằng id
+router.patch("/update/:id", async (rq, res) => {
   try {
     const { id } = rq.params;
     const allTodo = await todoList.findOneAndUpdate({ _id: id }, rq.body, {
@@ -34,6 +42,7 @@ router.patch("/complete/:id", async (rq, res) => {
   }
 });
 
+// xóa todo này khỏi data
 router.delete("/delete/:id", async (rq, res) => {
   try {
     const { id } = rq.params;
