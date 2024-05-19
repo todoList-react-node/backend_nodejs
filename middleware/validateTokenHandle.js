@@ -5,6 +5,7 @@ dotEnv.config();
 const validateToken = async (rq, res, next) => {
   try {
     let token;
+
     let authHeader = rq.headers.Authorization || rq.headers.authorization;
     if (authHeader && authHeader.startsWith("Bearer")) {
       token = authHeader.split(" ")[1];
@@ -14,9 +15,8 @@ const validateToken = async (rq, res, next) => {
         function (error, decoded) {
           if (error) {
             res.status(401).send("User is not authorized");
-            throw new error();
           } else {
-            rq.user = decoded.user;
+            rq.user = decoded;
             next();
           }
         }
@@ -24,7 +24,6 @@ const validateToken = async (rq, res, next) => {
     }
     if (!token) {
       res.status(403).send("Token not exit in current time");
-      throw new error();
     }
   } catch (error) {
     res.status(500).send("server error");

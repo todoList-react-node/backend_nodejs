@@ -1,10 +1,12 @@
 const express = require("express");
 const router = express.Router();
-const { user } = require("../models/model.js");
+const { user, UserToken } = require("../models/model.js");
 const bcrypt = require("bcrypt");
 var jwt = require("jsonwebtoken");
 // providing process to join the env file
 const dotEnv = require("dotenv");
+const generateTokens = require("../utils/generateTokens.js");
+const verifyRefreshToken = require("../utils/verifyRefreshToken.js");
 const validateToken = require("../middleware/validateTokenHandle.js");
 dotEnv.config();
 // ending
@@ -12,6 +14,8 @@ dotEnv.config();
 // login with current account
 router.post("/login", async (rq, res) => {
   try {
+    let infomationUser;
+    let tokenLifespan;
     const findUserName = await user.findOne({ userName: rq.body.userName });
     const isSamePass = await bcrypt.compare(
       rq.body.password,
@@ -21,22 +25,31 @@ router.post("/login", async (rq, res) => {
       res.send("Account not found");
     }
     if (!isSamePass) {
-      res.send("Password not correct");
+      res.send("Password not co'rrect");
     }
-    // providing access token by get the pass and userName
-    const aceessToken = jwt.sign(
-      {
-        user: {
-          id: findUserName._id,
-          userName: findUserName.userName,
-        },
-      },
+    const { accessToken, refreshToken } = await generateTokens(findUserName);
+    jwt.verify(
+      accessToken,
       process.env.ACCESS_TOKEN_SECRET,
-      { expiresIn: "60m" }
+      function (err, decoded) {
+        if (err) {
+          console.log("vertify err", err);
+        }
+        infomationUser = decoded;
+        tokenLifespan = decoded.exp;
+      }
     );
-    res.status(200).json({ aceessToken });
+    // resp all inmformation of token decoded
+    res.status(200).json({
+      error: false,
+      infomationUser,
+      accessToken,
+      refreshToken,
+      message: "Logged in sucessfully",
+      tokenLifespan,
+    });
   } catch (error) {
-    res.status(500).json(error);
+    res.status(500).json({ error: true, message: "Internal Server Error" });
   }
 });
 
@@ -50,14 +63,14 @@ router.post("/register", async (rq, res) => {
     // Check if name user is already have
     const exitUserName = await user.findOne({ userName: data.userName });
     if (exitUserName) {
-      res.send("User already taken");
+      res.status(409).send("Account already taken");
     } else {
       // if not the system will hash the password and pass to the collection in mongodb
       const hashPassword = await bcrypt.hash(data.password, 10);
       data.password = hashPassword;
-      const newAccount = new user(data);
-      const saveUser = await newAccount.save();
-      res.status(204).json(saveUser);
+      const addnewUser = new user(data);
+      const saveUser = await addnewUser.save();
+      res.status(201).json({ saveUser, message: "Signup successfull" });
     }
   } catch (error) {
     res.status(500, "Sever error");
@@ -74,9 +87,42 @@ router.get("/getall", async (rq, res) => {
   }
 });
 
-// Check current user with middleware
-router.get("/current", validateToken, async (rq, res) => {
-  res.status(200).send(rq.user);
+// get new accesstokenn and return new token
+router.post("/refresh", async (req, res) => {
+  verifyRefreshToken(req.body.refreshToken)
+    .then(({ tokenDetails }) => {
+      const payload = { _id: tokenDetails._id, name: tokenDetails.name };
+      const accessToken = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "14m",
+      });
+      res.status(200).json({
+        error: false,
+        accessToken,
+        message: "Access token created successfully",
+      });
+    })
+    .catch((err) => res.status(400).json(err));
+});
+
+// logout and delete current tokenf
+router.delete("/logout", async (req, res) => {
+  try {
+    const userToken = await UserToken.findOne({ token: req.body.refreshToken });
+    if (!userToken)
+      return res
+        .status(200)
+        .json({ error: false, message: "Logged Out Sucessfully" });
+
+    await UserToken.remove();
+    res.status(200).json({ error: false, message: "Logged Out Sucessfully" });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: true, message: "Internal Server Error" });
+  }
+});
+
+router.get("/getcurrent", validateToken, async (rq, res) => {
+  res.json(rq.user);
 });
 
 module.exports = router;
