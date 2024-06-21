@@ -8,46 +8,42 @@ const dotEnv = require("dotenv");
 const generateTokens = require("../utils/generateTokens.js");
 const verifyRefreshToken = require("../utils/verifyRefreshToken.js");
 const validateToken = require("../middleware/validateTokenHandle.js");
+const authLogin = require("../middleware/authenLogin.js");
 dotEnv.config();
 // ending
 
 // login with current account
-router.post("/login", async (rq, res) => {
+router.post("/login", authLogin, async (rq, res) => {
+  // using middleware to checking the username is exist or not
   try {
     let infomationUser;
     let tokenLifespan;
-    const findUserName = await user.findOne({ userName: rq.body.userName });
-    const isSamePass = await bcrypt.compare(
-      rq.body.password,
-      findUserName.password
-    );
-    if (!findUserName) {
-      res.send("Account not found");
-    }
+    const isSamePass = await bcrypt.compare(rq.body.password, rq.user.password);
     if (!isSamePass) {
-      res.send("Password not co'rrect");
-    }
-    const { accessToken, refreshToken } = await generateTokens(findUserName);
-    jwt.verify(
-      accessToken,
-      process.env.ACCESS_TOKEN_SECRET,
-      function (err, decoded) {
-        if (err) {
-          console.log("vertify err", err);
+      res.send("Password not correct");
+    } else {
+      const { accessToken, refreshToken } = await generateTokens(rq.user);
+      jwt.verify(
+        accessToken,
+        process.env.ACCESS_TOKEN_SECRET,
+        function (err, decoded) {
+          if (err) {
+            console.log("vertify err", err);
+          }
+          infomationUser = decoded;
+          tokenLifespan = decoded.exp;
         }
-        infomationUser = decoded;
-        tokenLifespan = decoded.exp;
-      }
-    );
-    // resp all inmformation of token decoded
-    res.status(200).json({
-      error: false,
-      infomationUser,
-      accessToken,
-      refreshToken,
-      message: "Logged in sucessfully",
-      tokenLifespan,
-    });
+      );
+      // resp all inmformation of token decoded
+      res.status(200).json({
+        error: false,
+        infomationUser,
+        accessToken,
+        refreshToken,
+        message: "Logged in sucessfully",
+        tokenLifespan,
+      });
+    }
   } catch (error) {
     res.status(500).json({ error: true, message: "Internal Server Error" });
   }

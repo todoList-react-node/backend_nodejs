@@ -64,7 +64,22 @@ router.delete("/delete/:id", async (rq, res) => {
 router.patch("/complete/:id", async (rq, res) => {
   try {
     const todoID = rq.params.id;
-    const findTodo = await todoList.findOneAndUpdate({ _id: todoID }, rq.body);
+    const findTodo = await todoList.findOneAndUpdate({ _id: todoID }, rq.body, {
+      new: true,
+    });
+    res.status(201).json(findTodo);
+  } catch (error) {
+    res.status(500).send("Server error");
+  }
+});
+
+// uncomplete task
+router.patch("/uncomplete/:id", async (rq, res) => {
+  try {
+    const todoID = rq.params.id;
+    const findTodo = await todoList.findOneAndUpdate({ _id: todoID }, rq.body, {
+      new: true,
+    });
     res.status(201).json(findTodo);
   } catch (error) {
     res.status(500).send("Server error");
