@@ -87,13 +87,15 @@ router.get("/getall", async (rq, res) => {
 router.post("/refresh", async (req, res) => {
   verifyRefreshToken(req.body.refreshToken)
     .then(({ tokenDetails }) => {
+      let tokenLifespan = "10s";
       const payload = { _id: tokenDetails._id, name: tokenDetails.name };
       const accessToken = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: "14m",
+        expiresIn: tokenLifespan,
       });
       res.status(200).json({
         error: false,
         accessToken,
+        tokenLifespan,
         message: "Access token created successfully",
       });
     })

@@ -7,7 +7,7 @@ const generateTokens = async (user) => {
   try {
     const payload = { _id: user._id, name: user.userName };
     const accessToken = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
-      expiresIn: "14m",
+      expiresIn: "10s",
     });
     const refreshToken = jwt.sign(
       payload,
